@@ -1,0 +1,258 @@
+#INCLUDE <16f887.h>
+#DEVICE ADC=10 
+#FUSES XT,NOWDT,NOPROTECT,NOLVP,PUT,BROWNOUT, 
+#USE delay(internal=4000000)  
+#USE i2c(Master,Fast=100000, sda=PIN_C4, scl=PIN_C3,force_sw)  
+#DEFINE USE_PORTB_KBD 
+#INCLUDE "i2c_Flex_LCD.c"
+#INCLUDE <KBD_4x4.c>
+#USE     STANDARD_IO(B) //activa las resistencias de pull-up
+#BYTE porta = 5 // Identificador para el puerto A. 
+#BYTE portb = 6 // Identificador para el puerto B. 
+#BYTE portc = 7 // Identificador para el puerto C. 
+#BYTE portd = 8 // Identificador para el puerto D. 
+#BYTE porte = 9 // Identificador para el puerto E.
+///////////////////VARIABLES Y FUNCIONES///////////////////////////////////////
+int16 duty=0;
+float temperatura=0;
+int Timer2,Poscaler;
+int SP=0;
+char TECLA; //variable para el valor de la tecla presionada
+void config();
+void pausa();
+//////////////FUNCION PARA LEER EL TECLADO/////////////////////////////////////
+char tecla_time(void) {
+   char tecla='\0'; //ponemos la variable en blanco (la borramos)
+   unsigned int16 timeout;
+   timeout=0;
+   tecla=kbd_getc(); //Captura valor del teclado
+      while(tecla=='\0' && (++timeout< (20000))) //preguntamos por el teclado por 100 ms
+      {
+         delay_us(10);
+         tecla=kbd_getc(); //Captura valor del teclado
+      }
+   return(tecla);
+}
+///////////////////////////////////////////////////////////////////////////////
+void main() {
+//////PUERTOS////////////
+PORT_B_PULLUPS (0xFF); //usamos las resistencias pull-up
+SET_TRIS_A(0B00000001);
+SET_TRIS_B(0);
+SET_TRIS_C(0);
+/////////LCD//////////
+lcd_init(0x4E,16,2);
+lcd_backlight_led(ON); //Enciende la luz de Fondo
+lcd_clear();  //Limpia el LCD
+///////////PWM/////////////
+   Timer2=249;
+   Poscaler=1;
+   setup_timer_2(t2_div_by_4,Timer2,Poscaler);   //Configuracion de Timer 2 para establecer frec. PWM a 1kHz
+   setup_ccp1(ccp_pwm);                //Configurar modulo CCP1 en modo PWM
+   setup_adc_ports(sAN0);        //Configurar ADC
+   setup_adc(adc_clock_internal);
+///////////TECLADO//////////////
+KBD_INIT();       //Inicializar el driver del teclado
+//////////Secuencia de inicio//////////
+lcd_gotoxy(1,1);
+printf(lcd_putc, "Bienvenido");
+lcd_gotoxy(1,2);
+printf(lcd_putc, "Fija el SP...");
+delay_ms(500);
+config();
+lcd_clear();
+///////////////////////////////////////
+   while(true)
+   {
+        set_adc_channel(0);   
+        delay_us(100);       
+        duty=read_adc(); 
+        set_pwm1_duty(duty);
+        temperatura=duty*0.4882;
+        TECLA=tecla_time(); //Leemos el valor que devuelve la funcion para leer el teclado
+        lcd_gotoxy(1, 1);
+        printf(lcd_putc, "Temp: %lu ", duty);   //%lu para imprimir el valor de una int16
+        switch(TECLA){
+         case '#':
+            config();//vamos a fijar un SP
+            break;
+         case '*':
+            pausa(); //pausamos el programa
+            break;
+        }
+        
+        lcd_gotoxy(1,2);
+        printf(lcd_putc, "SP: %i", SP);
+        delay_ms(100);
+   }
+}
+
+void config(){
+// en esta funcion fijamos un nuevo SP
+int digito=1;
+int primero=0;
+lcd_clear();
+lcd_gotoxy(1,1);
+printf(lcd_putc, "SP entre 0 y 99");
+lcd_gotoxy(1,2);
+printf(lcd_putc, "SP:");
+TECLA='\0';
+   while(TECLA!='#'){ 
+      TECLA='\0';   
+      TECLA=tecla_time();
+      if(digito==1||digito==2){
+      switch(TECLA){
+         case '1':
+            if(digito==1){
+               primero=1;
+               SP=1;
+            }else{
+               SP=(primero*10)+1;
+            }
+            lcd_gotoxy(4,2);
+            printf(lcd_putc,"%i", SP);
+            digito++;
+            break;
+         case '2':
+            if(digito==1){
+               primero=2;
+               SP=2;
+            }else{
+               SP=(primero*10)+2;
+            }
+            lcd_gotoxy(4,2);
+            printf(lcd_putc,"%i", SP);
+            digito++;
+            break;
+         case '3':
+            if(digito==1){
+               primero=3;
+               SP=3;
+            }else{
+               SP=(primero*10)+3;
+            }
+            lcd_gotoxy(4,2);
+            printf(lcd_putc,"%i", SP);
+            digito++;
+            break;
+         case '4':
+            if(digito==1){
+               primero=4;
+               SP=4;
+            }else{
+               SP=(primero*10)+4;
+            }
+            lcd_gotoxy(4,2);
+            printf(lcd_putc,"%i", SP);
+            digito++;
+            break;
+         case '5':
+            if(digito==1){
+               primero=5;
+               SP=5;
+            }else{
+               SP=(primero*10)+5;
+            }
+            lcd_gotoxy(4,2);
+            printf(lcd_putc,"%i", SP);
+            digito++;
+            break;
+         case '6':
+            if(digito==1){
+               primero=6;
+               SP=6;
+            }else{
+               SP=(primero*10)+6;
+            }
+            lcd_gotoxy(4,2);
+            printf(lcd_putc,"%i", SP);
+            digito++;
+            break;
+         case '7':
+            if(digito==1){
+               primero=7;
+               SP=7;
+            }else{
+               SP=(primero*10)+7;
+            }
+            lcd_gotoxy(4,2);
+            printf(lcd_putc,"%i", SP);
+            digito++;
+            break;
+         case '8':
+            if(digito==1){
+               primero=8;
+               SP=8;
+            }else{
+               SP=(primero*10)+8;
+            }
+            lcd_gotoxy(4,2);
+            printf(lcd_putc,"%i", SP);
+            digito++;
+            break;
+         case '9':
+            if(digito==1){
+               primero=9;
+               SP=9;
+            }else{
+               SP=(primero*10)+9;
+            }
+            lcd_gotoxy(4,2);
+            printf(lcd_putc,"%i", SP);
+            digito++;
+            break;
+         case '0':
+            if(digito==1){
+               primero=0;
+               SP=0;
+            }else{
+               SP=(primero*10)+0;
+            }
+            lcd_gotoxy(4,2);
+            printf(lcd_putc,"%i", SP);
+            digito++;
+            break;
+         case 'A':
+            SP=16;
+            lcd_gotoxy(4,2);
+            printf(lcd_putc,"%i", SP);
+            TECLA='#';
+            break;
+         case 'B':
+            SP=18;
+            lcd_gotoxy(4,2);
+            printf(lcd_putc,"%i", SP);
+            TECLA='#';
+            break;
+         case 'C':
+            SP=20;
+            lcd_gotoxy(4,2);
+            printf(lcd_putc,"%i", SP);
+            TECLA='#';
+            break;
+         case 'D':
+            SP=24;
+            lcd_gotoxy(4,2);
+            printf(lcd_putc,"%i", SP);
+            TECLA='#';
+            break;
+      }
+      }
+   }
+   lcd_clear();
+   delay_ms(10);
+   printf(lcd_putc, "SP fijado: %i",SP);
+   delay_ms(500);
+   lcd_clear();
+}
+
+void pausa(){
+lcd_clear();
+lcd_gotoxy(1,1);
+printf(lcd_putc, "PAUSA");
+TECLA='\0';
+while(TECLA!='*'){
+   TECLA=tecla_time();
+   }
+lcd_clear();
+}
